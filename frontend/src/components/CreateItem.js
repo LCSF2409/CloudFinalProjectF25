@@ -252,7 +252,7 @@ const CreateItem = () => {
                 </div>
               </div>
 
-              {/* cost Unit */}
+              {/* cost unit */}
               <div className="form-group">
                 <label htmlFor="costUnit">
                   <FaDollarSign /> Cost per Unit ($) *
