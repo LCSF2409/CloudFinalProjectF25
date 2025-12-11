@@ -7,32 +7,28 @@ const Inventory = require('../models/Inventory');
 
 const generateInventoryId = async (userId) => {
     try {
-        // Find the highest inventory ID for this user
-        const result = await Inventory.aggregate([
-            { $match: { userId: mongoose.Types.ObjectId(userId) } },
-            { 
-                $project: {
-                    number: { 
-                        $toInt: { 
-                            $arrayElemAt: [{ $split: ["$inventoryId", "-"] }, 1] 
-                        } 
-                    }
-                }
-            },
-            { $sort: { number: -1 } },
-            { $limit: 1 }
-        ]);
+        // Get the highest existing inventory ID for this user
+        const lastItem = await Inventory.findOne({ userId })
+            .sort({ inventoryId: -1 }) // Sort descending
+            .select('inventoryId');
         
         let nextNumber = 1;
-        if (result.length > 0 && result[0].number) {
-            nextNumber = result[0].number + 1;
+        
+        if (lastItem && lastItem.inventoryId) {
+            // Extract the number from the last ID (e.g., "INV-001" -> 1)
+            const match = lastItem.inventoryId.match(/INV-(\d+)/);
+            if (match) {
+                nextNumber = parseInt(match[1], 10) + 1;
+            }
         }
         
-        return `INV-${nextNumber.toString().padStart(3, '0')}`;
+        // Format with leading zeros (e.g., 1 -> "001", 25 -> "025")
+        const paddedNumber = nextNumber.toString().padStart(3, '0');
+        return `INV-${paddedNumber}`;
     } catch (error) {
-        console.error('Error generating ID:', error);
-        // Fallback: timestamp-based ID
-        return `INV-T${Date.now().toString().slice(-6)}`;
+        console.error('Error generating inventory ID:', error);
+        // Fallback: use timestamp
+        return `INV-${Date.now().toString().slice(-6)}`;
     }
 };
 
