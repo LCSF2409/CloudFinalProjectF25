@@ -502,12 +502,14 @@ body {
     max-height: 600px; 
     overflow-y: auto; 
     position: relative;
+    overflow-x: auto; /* Enable horizontal scroll */
+    -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
 }
 
 .inventory-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px;
+  min-width: 1000px;
 }
 
 .inventory-table thead {
