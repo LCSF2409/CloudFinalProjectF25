@@ -17,10 +17,7 @@ const InventorySchema = new mongoose.Schema({
     category: {
         type: String,
         required: [true, 'Category is required'],
-        enum: {
-            values: ['Accessories', 'Electronics', 'Furniture', 'Printing', 'Audio', 'Office', 'Storage'],
-            message: '{VALUE} is not a valid category'
-        }
+        enum: ['Accessories', 'Electronics', 'Furniture', 'Printing', 'Audio', 'Office', 'Storage']
     },
     supplier: {
         type: String,
@@ -31,10 +28,7 @@ const InventorySchema = new mongoose.Schema({
     stock: {
         type: String,
         required: [true, 'Stock status is required'],
-        enum: {
-            values: ['In stock', 'Out of stock'],
-            message: '{VALUE} is not a valid stock status'
-        },
+        enum: ['In stock', 'Out of stock'],
         default: 'In stock'
     },
     costUnit: {
@@ -61,8 +55,39 @@ const InventorySchema = new mongoose.Schema({
     }
 });
 
-// create index for faster queries
+// Generate unique inventory ID before saving
+InventorySchema.pre('save', async function(next) {
+    if (!this.inventoryId) {
+        try {
+            // Get the highest inventoryId for this user
+            const lastItem = await this.constructor.findOne(
+                { userId: this.userId },
+                { inventoryId: 1 },
+                { sort: { inventoryId: -1 } }
+            );
+            
+            let nextNumber = 1;
+            if (lastItem && lastItem.inventoryId) {
+                // Extract number from "INV-001"
+                const match = lastItem.inventoryId.match(/INV-(\d+)/);
+                if (match) {
+                    nextNumber = parseInt(match[1]) + 1;
+                }
+            }
+            
+            this.inventoryId = `INV-${nextNumber.toString().padStart(3, '0')}`;
+            console.log(`✅ Generated inventoryId: ${this.inventoryId} for user: ${this.userId}`);
+        } catch (error) {
+            console.error('Error generating inventoryId:', error);
+            // Fallback: use timestamp
+            this.inventoryId = `INV-${Date.now().toString().slice(-6)}`;
+        }
+    }
+    next();
+});
+
+// Add index for faster queries
+InventorySchema.index({ userId: 1, inventoryId: 1 }, { unique: true });
 InventorySchema.index({ userId: 1, lastUpdated: -1 });
-InventorySchema.index({ productName: 'text', category: 'text', supplier: 'text' });
 
 module.exports = mongoose.model('Inventory', InventorySchema);
