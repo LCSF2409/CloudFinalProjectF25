@@ -267,10 +267,9 @@ router.put('/:id', [
 router.delete('/:id', auth, async (req, res) => {
     try {
         console.log('🗑️ Delete request for item ID:', req.params.id);
-        console.log('Request method:', req.method);
-        console.log('Request headers:', req.headers);
+        console.log('User ID:', req.user.id);
         
-        // check if ID is provided
+        // Validate item ID
         if (!req.params.id || req.params.id === 'undefined') {
             return res.status(400).json({ 
                 success: false,
@@ -278,7 +277,7 @@ router.delete('/:id', auth, async (req, res) => {
             });
         }
 
-        // find item
+        // Find item
         const item = await Inventory.findById(req.params.id);
         
         if (!item) {
@@ -289,7 +288,7 @@ router.delete('/:id', auth, async (req, res) => {
             });
         }
 
-        // check if user owns the item
+        // Check if user owns the item
         if (item.userId.toString() !== req.user.id) {
             console.log('❌ Authorization failed:');
             console.log('   Item userId:', item.userId.toString());
@@ -300,7 +299,7 @@ router.delete('/:id', auth, async (req, res) => {
             });
         }
 
-        // delete item
+        // Delete item
         await Inventory.findByIdAndDelete(req.params.id);
         console.log('✅ Item deleted successfully:', item.inventoryId);
 
@@ -311,7 +310,7 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (err) {
         console.error('❌ Error deleting item:', err.message);
         
-        // handle invalid ID format
+        // Handle invalid ID format
         if (err.name === 'CastError') {
             return res.status(400).json({ 
                 success: false,

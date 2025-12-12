@@ -2,20 +2,31 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path'); // ADD THIS
+const path = require('path');
 
 const app = express();
 
+app.use(cors());
+
 // Middleware
-app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://cloudfinalprojectf25-5.onrender.com']
-        : 'http://localhost:3000',
-    credentials: true
-}));
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-token');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    next();
+});
+
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -36,28 +47,6 @@ const itemRoutes = require('./routes/items');
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 
-// 👇 SERVE FRONTEND IN PRODUCTION 👇
-if (process.env.NODE_ENV === 'production') {
-    const __dirname = path.resolve();
-    
-    // Serve static files from React app
-    app.use(express.static(path.join(__dirname, '../frontend/build')));
-    
-    // Handle React routing, return all requests to React app
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-    });
-} else {
-    // Development route
-    app.get('/', (req, res) => {
-        res.json({ 
-            message: 'Smart Inventory Tracker API - Development Mode',
-            frontend: 'Run on http://localhost:3000'
-        });
-    });
-}
-// 👆 END OF ADDED SECTION 👆
-
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({
@@ -75,6 +64,28 @@ app.get('/api/test', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+
+// 👇 SERVE FRONTEND IN PRODUCTION - MOVED HERE 👇
+if (process.env.NODE_ENV === 'production') {
+    const __dirname = path.resolve();
+    
+    // Serve static files from React app
+    app.use(express.static(path.join(__dirname, '../frontend/build')));
+    
+    // Handle React routing - THIS MUST BE LAST
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+    });
+} else {
+    // Development route
+    app.get('/', (req, res) => {
+        res.json({ 
+            message: 'Smart Inventory Tracker API - Development Mode',
+            frontend: 'Run on http://localhost:3000'
+        });
+    });
+}
+// 👆 END OF ADDED SECTION 👆
 
 // Error handling
 app.use((err, req, res, next) => {
