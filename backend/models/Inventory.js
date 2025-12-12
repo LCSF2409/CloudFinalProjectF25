@@ -4,9 +4,13 @@ const InventorySchema = new mongoose.Schema({
     inventoryId: {
         type: String,
         required: true,
-        unique: true,
+        // REMOVE unique: true, - Comment out or remove this line
         trim: true,
-        uppercase: true
+        uppercase: true,
+        default: function() {
+            // Generate unique ID with timestamp
+            return `INV-${Date.now().toString(36)}${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
+        }
     },
     productName: {
         type: String,
